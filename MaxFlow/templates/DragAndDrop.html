@@ -1,0 +1,304 @@
+<!doctype html>
+{% load staticfiles %}
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <title>Network | MaxFlow</title>
+
+  <style type="text/css">
+    body, select {
+      font: 10pt sans;
+    }
+    #mynetwork {
+      position:relative;
+      width: 100%;
+      height: 600px;
+      border: 1px solid lightgray;
+    }
+    table.legend_table {
+      font-size: 11px;
+      border-width:1px;
+      border-color:#d3d3d3;
+      border-style:solid;
+    }
+    table.legend_table,td {
+      border-width:1px;
+      border-color:#d3d3d3;
+      border-style:solid;
+      padding: 2px;
+    }
+    div.table_content {
+      width:80px;
+      text-align:center;
+    }
+    div.table_description {
+      width:100px;
+    }
+
+    #operation {
+      font-size:28px;
+    }
+    #network-popUp {
+      display:none;
+      position:absolute;
+      top:121px;
+      left:50px;
+      z-index:299;
+      width:282px;
+      height:142px;
+      background-color: #f9f9f9;
+      border-style:solid;
+      border-width:3px;
+      border-color: #5394ed;
+      padding:10px;
+      text-align: center;
+    }
+    #edge-popUp {
+      display:none;
+      position:absolute;
+      top:121px;
+      left:50px;
+      z-index:299;
+      width:282px;
+      height:142px;
+      background-color: #f9f9f9;
+      border-style:solid;
+      border-width:3px;
+      border-color: #5394ed;
+      padding:10px;
+      text-align: center;
+    }
+  </style>
+  <script type="text/javascript" src="{% static "exampleUtil.js" %}"></script>
+  <script type="text/javascript" src="{% static "vis.js" %}"></script>
+    <script src="http://code.jquery.com/jquery-1.11.0.min.js"></script>
+  <link href="{% static "vis-network.min.css" %}" rel="stylesheet" type="text/css" />
+
+  <script type="text/javascript">
+    var nodes = null;
+    var edges = null;
+    var network = null;
+    // randomly create some nodes and edges
+    //var data = getScaleFreeNetwork(25);
+    var data,data2;
+    var seed = 2;
+
+
+    var NodeNo = 0;
+    var NodeLabel = "Node "+NodeNo;
+
+
+    function setDefaultLocale() {
+      var defaultLocal = navigator.language;
+      var select = document.getElementById('locale');
+      select.selectedIndex = 0; // set fallback value
+      for (var i = 0, j = select.options.length; i < j; ++i) {
+        if (select.options[i].getAttribute('value') === defaultLocal) {
+          select.selectedIndex = i;
+          break;
+        }
+      }
+    }
+
+    function destroy() {
+      if (network !== null) {
+        network.destroy();
+        network = null;
+      }
+    }
+
+    function draw() {
+      destroy();
+      nodes = [];
+      edges = [];
+
+      // create a network
+      var container = document.getElementById('mynetwork');
+      var options = {
+        layout: {randomSeed:seed}, // just to make sure the layout is the same when the locale is changed
+        locale: document.getElementById('locale').value,
+        manipulation: {
+          addNode: function (data, callback) {
+            // filling in the popup DOM elements
+
+            document.getElementById('operation').innerHTML = "Add Node";
+            document.getElementById('node-id').value = NodeNo;
+            document.getElementById('node-label').value = NodeLabel;
+            NodeNo += 1;
+            NodeLabel = "Node "+NodeNo;
+            document.getElementById('saveButton').onclick = saveData.bind(this, data, callback);
+            document.getElementById('cancelButton').onclick = clearPopUp.bind();
+            document.getElementById('network-popUp').style.display = 'block';
+
+
+          },
+          editNode: function (data, callback) {
+            // filling in the popup DOM elements
+            document.getElementById('operation').innerHTML = "Edit Node";
+            document.getElementById('node-id').value = data.id;
+            document.getElementById('node-label').value = data.label;
+            document.getElementById('saveButton').onclick = saveData.bind(this, data, callback);
+            document.getElementById('cancelButton').onclick = cancelEdit.bind(this,callback);
+            document.getElementById('network-popUp').style.display = 'block';
+          },
+
+          addEdge: function (data, callback) {
+            document.getElementById('operation').innerHTML = "Set Edge Weight";
+
+            document.getElementById('edge-popUp').style.display = 'block';
+
+            document.getElementById('saveBtn').onclick = function(){
+
+
+            Object.assign(data, {arrows:{
+                to: {
+                enabled: true,
+                type: 'circle'
+                    }
+                }}
+                );
+
+                Object.assign(data, {label:document.getElementById('Edge-Weight').value}
+                );
+                set(data);
+
+                callback(data);
+                CreateGraph();
+                 document.getElementById('saveButton').onclick = null;
+                 document.getElementById('cancelButton').onclick = null;
+                 document.getElementById('edge-popUp').style.display = 'none';
+            };
+             document.getElementById('cancelBtn').onclick = function(){
+                 document.getElementById('saveButton').onclick = null;
+                 document.getElementById('cancelButton').onclick = null;
+                 document.getElementById('edge-popUp').style.display = 'none';
+             };
+          }
+        }
+      };
+
+      network = new vis.Network(container, data, options);
+
+    }
+
+    function clearPopUp() {
+      document.getElementById('saveButton').onclick = null;
+      document.getElementById('cancelButton').onclick = null;
+      document.getElementById('network-popUp').style.display = 'none';
+    }
+
+    function cancelEdit(callback) {
+      clearPopUp();
+      callback(null);
+    }
+
+    function saveData(data,callback) {
+    try{
+      data.id = document.getElementById('node-id').value;
+      data.label = document.getElementById('node-label').value;
+      clearPopUp();
+      callback(data);
+      }
+            catch (err) {
+                alert(err);
+            }
+    }
+
+    function init() {
+      setDefaultLocale();
+      draw();
+    }
+
+
+ var URL = "{% url 'index' %}";
+
+ var data2;
+
+ function set(data){
+    data2=data
+    }
+
+    function CreateGraph(){
+Object.assign(data2, {csrfmiddlewaretoken: '{{ csrf_token }}'});
+
+       $.post(URL, data2, function(response){
+
+       });
+     }
+
+ function Send(){
+       var St = {}
+       Object.assign(St, {s: document.getElementById('Source_node').value});
+       Object.assign(St, {t: document.getElementById('Destination_node').value});
+       Object.assign(St, {csrfmiddlewaretoken: '{{ csrf_token }}'});
+
+
+ console.log(St);
+
+    $.post(URL,St, function(response){
+        $("#result").empty();
+        $("#result").append(response);
+
+    });
+}
+$(document).ready(function(){
+
+    $('#MaxFlowBtn').click(function(){
+
+        Send();
+    });
+});
+  </script>
+
+
+<body onload="init();">
+<p>
+  <td><label for="Source_node">Source</label></td>
+  <td><input id="Source_node" type="text" value="0"></td>
+
+  <td><label for="Destination_node">Destination</label></td>
+  <td><input id="Destination_node" type="text" value="1"></td>
+
+
+
+    <button id="MaxFlowBtn">Find Max Flow</button>
+<td><label>Maximum Flow is :</label></td>
+<td><label id="result"></label></td>
+<!--<td><input id="result"></input></td>-->
+  <select id="locale" onchange="draw();" style="display:none;">
+    <option value="en">en</option>
+  </select>
+</p>
+
+<div id="network-popUp">
+  <span id="operation">node</span> <br>
+  <table style="margin:auto;"><tr>
+    <td>id</td><td><input id="node-id" value="0" /></td>
+  </tr>
+    <tr>
+      <td>label</td><td><input id="node-label" value="node 0" /></td>
+    </tr>
+
+  </table>
+  <input type="button" value="save" id="saveButton" />
+  <input type="button" value="cancel" id="cancelButton" />
+</div>
+
+<div id="edge-popUp">
+  <span id="operation">Edge</span> <br>
+  <table style="margin:auto;">
+    <tr>
+      <td>Weight</td><td><input id="Edge-Weight" value="10" /></td>
+    </tr>
+
+  </table>
+  <input type="button" value="save" id="saveBtn" />
+  <input type="button" value="cancel" id="cancelBtn" />
+</div>
+
+<br />
+<div id="mynetwork"></div>
+
+</body>
+
+</html>
